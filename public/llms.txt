@@ -1,0 +1,9 @@
+# Phaos AI
+
+> Pre-seed pitch deck for Phaos AI — autonomous voice agents and agentic workflow automation as a digital workforce for the document solutions and printing industry.
+
+Phaos AI deploys deeply integrated intelligent voice agents that bridge inbound telephony and legacy ERPs through agentic workflow orchestration. This site hosts the company's investor pitch deck.
+
+## Pages
+
+- [Pitch Deck](/): Interactive pre-seed investor presentation covering the opportunity, product, market, financials, and team.
