@@ -30,9 +30,11 @@ interface Prospect {
 export default function AdminPage() {
   const [authed, setAuthed] = useState(false);
   const [checking, setChecking] = useState(true);
+  const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("seddayoub77@gmail.com");
   const [password, setPassword] = useState("");
   const [loginErr, setLoginErr] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
 
   const [fullName, setFullName] = useState("");
   const [business, setBusiness] = useState("");
@@ -86,30 +88,46 @@ export default function AdminPage() {
     setProspects((data as Prospect[]) ?? []);
   };
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginErr(null);
-    if (email !== "seddayoub77@gmail.com") {
+    if (email.trim().toLowerCase() !== "seddayoub77@gmail.com") {
       setLoginErr("Unauthorized");
       return;
     }
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error || !data.session) {
-      setLoginErr(error?.message ?? "Login failed");
-      return;
+    setBusy(true);
+    try {
+      if (mode === "signup") {
+        const { error } = await supabase.auth.signUp({
+          email: email.trim(),
+          password,
+          options: { emailRedirectTo: `${window.location.origin}/admin` },
+        });
+        if (error) throw error;
+        toast({ title: "Account created. You can sign in now." });
+        setMode("login");
+      } else {
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error || !data.session) throw error ?? new Error("Login failed");
+
+        const { data: roleData } = await db
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", data.session.user.id)
+          .eq("role", "admin")
+          .maybeSingle();
+        if (!roleData) {
+          await supabase.auth.signOut();
+          setLoginErr("Not an admin");
+          return;
+        }
+        setAuthed(true);
+      }
+    } catch (err: any) {
+      setLoginErr(err.message ?? "Authentication failed");
+    } finally {
+      setBusy(false);
     }
-    const { data: roleData } = await db
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", data.session.user.id)
-      .eq("role", "admin")
-      .maybeSingle();
-    if (!roleData) {
-      await supabase.auth.signOut();
-      setLoginErr("Not an admin");
-      return;
-    }
-    setAuthed(true);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -152,17 +170,26 @@ export default function AdminPage() {
             <CardTitle>Admin login</CardTitle>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleLogin} className="space-y-4">
+            <form onSubmit={handleAuth} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Username</Label>
                 <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="pw">Password</Label>
-                <Input id="pw" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+                <Input id="pw" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
               </div>
               {loginErr && <p className="text-sm text-destructive">{loginErr}</p>}
-              <Button type="submit" className="w-full">Sign in</Button>
+              <Button type="submit" className="w-full" disabled={busy}>
+                {busy ? "Working…" : mode === "login" ? "Sign in" : "Create admin account"}
+              </Button>
+              <button
+                type="button"
+                onClick={() => setMode(mode === "login" ? "signup" : "login")}
+                className="w-full text-xs text-muted-foreground hover:underline"
+              >
+                {mode === "login" ? "First time? Create the admin account" : "Already have an account? Sign in"}
+              </button>
             </form>
           </CardContent>
         </Card>
