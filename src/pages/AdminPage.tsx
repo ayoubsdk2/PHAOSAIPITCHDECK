@@ -30,7 +30,7 @@ interface Prospect {
 export default function AdminPage() {
   const [authed, setAuthed] = useState(false);
   const [checking, setChecking] = useState(true);
-  const [email, setEmail] = useState("daniel@phaosai.com");
+  const [email, setEmail] = useState("seddayoub77@gmail.com");
   const [password, setPassword] = useState("");
   const [loginErr, setLoginErr] = useState<string | null>(null);
 
@@ -66,7 +66,7 @@ export default function AdminPage() {
       setChecking(false);
     };
     init();
-    const { data: sub } = supabase.auth.onAuthStateChange(() => {});
+    const { data: sub } = supabase.auth.onAuthStateChange(() => { });
     return () => {
       mounted = false;
       sub.subscription.unsubscribe();
@@ -89,7 +89,7 @@ export default function AdminPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginErr(null);
-    if (email !== "daniel@phaosai.com") {
+    if (email !== "seddayoub77@gmail.com") {
       setLoginErr("Unauthorized");
       return;
     }
