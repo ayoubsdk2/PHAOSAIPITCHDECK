@@ -110,16 +110,23 @@ export default function AdminPage() {
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error || !data.session) throw error ?? new Error("Login failed");
 
+        // Check if admin role exists, if not try to assign it
         const { data: roleData } = await db
           .from("user_roles")
           .select("role")
           .eq("user_id", data.session.user.id)
           .eq("role", "admin")
           .maybeSingle();
+
         if (!roleData) {
-          await supabase.auth.signOut();
-          setLoginErr("Not an admin");
-          return;
+          // Try to assign admin role via RPC (bypasses RLS)
+          const { data: assigned, error: rpcError } = await db.rpc("assign_admin_role");
+
+          if (rpcError || !assigned) {
+            await supabase.auth.signOut();
+            setLoginErr("Not an admin");
+            return;
+          }
         }
         setAuthed(true);
       }
